@@ -2,18 +2,19 @@ package main
 
 import (
 	"crypto"
-	"crypto/rand" //random generator and Reader
-	"crypto/rsa"      //public key
-	"crypto/sha256"   //sha256 hashing
-	"encoding/binary" // uint random generator
-	"encoding/json"   // json encoding/decoding Marshal
+	"crypto/rand"   //random generator and Reader
+	"crypto/rsa"    //public key
+	"crypto/sha256" //sha256 hashing
+
+	// uint random generator
+	"encoding/json" // json encoding/decoding Marshal
 	"fmt"
 )
 
 /*
-	Μην αλλάξετε το capitalization των λεξεων, πρεπει να ξεκινάνε με
-	κεφαλαίο για να γίνει σωστά το json encoding, αλλιώς δεν γίνονται
-	extracted τα variables
+Μην αλλάξετε το capitalization των λεξεων, πρεπει να ξεκινάνε με
+κεφαλαίο για να γίνει σωστά το json encoding, αλλιώς δεν γίνονται
+extracted τα variables
 */
 type Transaction struct {
 	SenderAddress      rsa.PublicKey
@@ -31,112 +32,112 @@ type SignedTransaction struct {
 
 type TransactionOutput struct {
 	ID                  uint64
-	parentTransactionID uint64      	//the id of the transaction this output was created in
+	parentTransactionID uint64        //the id of the transaction this output was created in
 	recipient           rsa.PublicKey //also known as the new owner of these coins.
 	amount              uint          //the amount of coins they own
 }
 
 type TransactionInput struct {
-	previousOutputID 	uint64 //Reference to TransactionOutputs -> transactionId
+	previousOutputID uint64 //Reference to TransactionOutputs -> transactionId
 }
 
 func generateTransaction(amount uint, sendersWallet Wallet, receiverAddress rsa.PublicKey) Transaction {
-	var UTXOsTotal uint;
-	UTXOsTotal = 0;
+	var UTXOsTotal uint
+	UTXOsTotal = 0
 
-	var activeUTXOs []TransactionOutput;
-	var poppedUTXO TransactionOutput;
-	var isEmpty bool;
+	var activeUTXOs []TransactionOutput
+	var poppedUTXO TransactionOutput
+	var isEmpty bool
 
 	// Go over the list until I find a sum that is >= the amount
 	for UTXOsTotal < amount {
-		poppedUTXO, isEmpty = sendersWallet.walletUTXOs.Pop();
+		poppedUTXO, isEmpty = sendersWallet.walletUTXOs.Pop()
 
-		if isEmpty == true {
-			fmt.Println("Empty UTXO Queue - not enough available funds");
+		if isEmpty {
+			fmt.Println("Empty UTXO Queue - not enough available funds")
 			// Re-add transcations
 			for _, poppedUTXO := range activeUTXOs {
-				sendersWallet.walletUTXOs.Push(poppedUTXO);
+				sendersWallet.walletUTXOs.Push(poppedUTXO)
 			}
 
 			return Transaction{}
 		}
-		UTXOsTotal += poppedUTXO.amount;
-		activeUTXOs = append(activeUTXOs, poppedUTXO);
+		UTXOsTotal += poppedUTXO.amount
+		activeUTXOs = append(activeUTXOs, poppedUTXO)
 	}
 
-	fmt.Println(UTXOsTotal);
+	fmt.Println(UTXOsTotal)
 
-	var transInputs []TransactionInput;
+	var transInputs []TransactionInput
 
 	// On god mhn ksexasete pote to _, efaga 25 lepta debugging giati nomiza oti h Pop() epestrefe int
 	// enw htan to index gia to range. Mia xara htan h C, hkseran ti ekanan 50 xronia twra
 	for _, poppedUTXO := range activeUTXOs {
-		transInputs = append(transInputs, TransactionInput{poppedUTXO.ID});
+		transInputs = append(transInputs, TransactionInput{poppedUTXO.ID})
 	}
 
 	// Create the transaction outputs
 	var transactionId, receiverOutputId, senderOutputId uint64
-	transactionId = generateRandomNumber();
-	receiverOutputId = generateRandomNumber();
-	senderOutputId = generateRandomNumber();
+	transactionId = generateRandomNumber()
+	receiverOutputId = generateRandomNumber()
+	senderOutputId = generateRandomNumber()
 
 	receiverTransactionOutput := TransactionOutput{
 		ID:                  receiverOutputId,
 		parentTransactionID: transactionId,
 		recipient:           receiverAddress,
 		amount:              amount,
-	};
+	}
 
 	senderTransactionOutput := TransactionOutput{
 		ID:                  senderOutputId,
 		parentTransactionID: transactionId,
 		recipient:           sendersWallet.publicKey,
 		amount:              UTXOsTotal - amount,
-	};
+	}
 
 	transOutput := [2]TransactionOutput{
 		receiverTransactionOutput,
-		senderTransactionOutput};
+		senderTransactionOutput}
 
 	// Create the unsigned Transaction struct and return it
 	transaction := Transaction{
-		SenderAddress:   sendersWallet.publicKey,
-		ReceiverAddress: receiverAddress,
-		Amount:          amount,
-		TransactionID:   transactionId,
-		TransactionInputs: 	transInputs,
+		SenderAddress:      sendersWallet.publicKey,
+		ReceiverAddress:    receiverAddress,
+		Amount:             amount,
+		TransactionID:      transactionId,
+		TransactionInputs:  transInputs,
 		TransactionOutputs: transOutput,
-	};
+	}
 
-	return transaction;
+	return transaction
 }
 
 func calculateHash(transactionData Transaction) [32]byte {
-	transactionJSON, err := json.Marshal(transactionData); 
+	transactionJSON, err := json.Marshal(transactionData)
 	if err != nil {
-		fmt.Printf("Error encoding transaction to JSON :( %v\n", err);
+		fmt.Printf("Error encoding transaction to JSON :( %v\n", err)
 	}
 
-	transactionHash := sha256.Sum256(transactionJSON); //returns a byte slice ([]byte)
-	return transactionHash;
+	transactionHash := sha256.Sum256(transactionJSON) //returns a byte slice ([]byte)
+	return transactionHash
 }
 
 func (trans Transaction) signTransaction(signeeWallet Wallet) SignedTransaction {
-	transactionHash := calculateHash(trans);
+	transactionHash := calculateHash(trans)
 
 	// create a signature with the wallets privateKey
-	signature, err := rsa.SignPKCS1v15(rand.Reader, &signeeWallet.privateKey, crypto.SHA256, transactionHash[:]);
+	signature, err := rsa.SignPKCS1v15(rand.Reader, &signeeWallet.privateKey, crypto.SHA256, transactionHash[:])
 	if err != nil {
-		fmt.Printf("Error signing transaction :( %s\n", err);
+		fmt.Printf("Error signing transaction :( %s\n", err)
 	}
 
 	signedTrans := SignedTransaction{
 		transactionData: trans,
 		signature:       signature,
-	};
+	}
 
-	return signedTrans;
+	return signedTrans
 }
 
 func (signedTrans SignedTransaction) verifySignature() bool {
@@ -151,70 +152,4 @@ func (signedTrans SignedTransaction) verifySignature() bool {
 	} else {
 		return true
 	}
-}
-
-
-
-func generateRandomNumber() uint64 {
-	var randomNum uint64
-
-	seed := make([]byte, 8)
-	_, _ = rand.Read(seed)
-	randomNum = binary.BigEndian.Uint64(seed[:])
-
-	return randomNum
-}
-
-
-func transTest() {
-	_, thimaPagwnaKey := generateKeyPair(2048);
-	portofoliPagwna := generateWallet();
-	leftaPagwna := TransactionOutput{
-		ID:	69,
-		parentTransactionID: 420,
-		recipient:	portofoliPagwna.publicKey,
-		amount: 1000,
-	}
-
-	transOut := [2]TransactionOutput{
-		TransactionOutput{
-				ID:	1234,
-				parentTransactionID:321,
-				recipient:	portofoliPagwna.publicKey,
-				amount:		10000-1000,
-			},
-			TransactionOutput{
-				ID:	12345,
-				parentTransactionID:321,
-				recipient:	thimaPagwnaKey,
-				amount:		1000,
-			},
-	}
-
-	var transIn []TransactionInput
-	transIn = append(transIn, TransactionInput{
-			previousOutputID: 100321})
-
-	fakeTransaction := Transaction {
-		SenderAddress:		thimaPagwnaKey,
-		ReceiverAddress:	portofoliPagwna.publicKey,
-		Amount:				100,
-		TransactionID:		42,
-		TransactionInputs:  transIn,
-		TransactionOutputs: transOut,
-	}
-
-	portofoliPagwna.walletUTXOs.Push(leftaPagwna);
-	unhashedTrans := generateTransaction(10, portofoliPagwna, thimaPagwnaKey);
-
-	fakeHashTrans := fakeTransaction.signTransaction(portofoliPagwna);
-
-	hashedTransaction := unhashedTrans.signTransaction(portofoliPagwna);
-
-	einaiTouPagwnaTaLefta := hashedTransaction.verifySignature();
-	einaiTouPagwnaTaLefta2 := fakeHashTrans.verifySignature();
-
-	fmt.Printf("\n")
-	fmt.Println(einaiTouPagwnaTaLefta)
-	fmt.Println(einaiTouPagwnaTaLefta2)
 }

@@ -3,37 +3,37 @@ package main
 type UTXOStack []TransactionOutput
 
 func (s *UTXOStack) IsEmpty() bool {
-	return len(*s) == 0;
+	return len(*s) == 0
 }
 
 func (s *UTXOStack) Push(UTXO TransactionOutput) {
-	*s = append(*s, UTXO);
+	*s = append(*s, UTXO)
 }
 
 func (s *UTXOStack) Pop() (element TransactionOutput, isEmpty bool) {
 	if s.IsEmpty() {
-		return TransactionOutput{}, true;
+		return TransactionOutput{}, true
 	} else {
-		index := len(*s) - 1;
-		element = (*s)[index]; 
-		*s = (*s)[:index]; 
-		return element, false;
+		index := len(*s) - 1
+		element = (*s)[index]
+		*s = (*s)[:index]
+		return element, false
 	}
 }
 
-func (s *UTXOStack) Contains(UTXOtoFind TransactionOutput) (uint,bool) {
+func (s *UTXOStack) Contains(transactionID uint64) (uint, bool) {
 	for _, utxo := range *s {
-		if utxo == UTXOtoFind {
-			return utxo.amount, true;
+		if utxo.ID == transactionID {
+			return utxo.amount, true
 		}
 	}
-	return 0, false;
+	return 0, false
 }
 
 func (s *UTXOStack) SumAmounts() uint {
-	var sum uint;
+	var sum uint
 	for _, utxo := range *s {
-		sum += utxo.amount;
+		sum += utxo.amount
 	}
-	return sum;
+	return sum
 }
