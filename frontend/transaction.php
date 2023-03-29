@@ -9,7 +9,18 @@
 
 <body class="d-flex flex-column min-vh-100 text-light" style="background-color: #111111;">
 
-  <?php include "func/navbar.php"; ?>
+  <?php include "func/navbar.php";
+
+  $port = "83.212.80.139:58080/";
+  $response = sendrequest('http://' . $port . 'balance', 'GET');
+
+  if ($response["code"] == 200) {
+    $balance = $response["response"];
+  } else {
+    $balance = 55;
+  }
+
+  ?>
 
   <br>
   <div class="container justify-content-space-between">
@@ -25,17 +36,12 @@
         <div>
           <form action="<?php echo htmlspecialchars($_SERVER["PHP_SELF"]); ?>" method="POST">
             <div class="mb-3" style="width: 55%;">
-
-              <label for="sender" class="form-label">Sender</label>
-              <input class="form-control" id="sender">
-            </div>
-            <div class="mb-3" style="width: 55%;">
               <label for="receiver" class="form-label">Receiver</label>
-              <input class="form-control" id="receiver">
+              <input class="form-control" name="receiver" id="receiver">
             </div>
             <div class="mb-3" style="width: 55%;">
               <label for="amount" class="form-label">Amount</label>
-              <input class="form-control" id="amount">
+              <input class="form-control" name="amount" id="amount">
             </div>
             <br>
             <div class="container d-flex justify-content-center">
@@ -50,62 +56,105 @@
           <h5>Wallet balance</h5>
         </div>
         <div class="card-body d-flex justify-content-start text-white">
-          <p><b style="font-size: 10vw;">55</b>
+          <p><b style="font-size: 10vw;"><?php echo $balance ?></b>
             <b style="font-size: 5vw;">NBC</b>
             <br> History
           </p>
         </div>
         <div class="overflow-auto" style="max-width: 100%; max-height: 200px; background-color: #222222">
-          <table class="table  text-light" style="background-color: #222222">
-            <thead>
-              <tr>
-                <th scope="col">#</th>
-                <th scope="col">First</th>
-                <th scope="col">Last</th>
-                <th scope="col">Handle</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr>
-                <th scope="row">1</th>
-                <td>Mark</td>
-                <td>Otto</td>
-                <td>@mdo</td>
-              </tr>
-              <tr>
-                <th scope="row">2</th>
-                <td>Jacob</td>
-                <td>Thornton</td>
-                <td>@fat</td>
-              </tr>
-              <tr>
-                <th scope="row">3</th>
-                <td>Larry</td>
-                <td>the Bird</td>
-                <td>@twitter</td>
-              </tr>
-              <tr>
-                <th scope="row">1</th>
-                <td>Mark</td>
-                <td>Otto</td>
-                <td>@mdo</td>
-              </tr>
-              <tr>
-                <th scope="row">2</th>
-                <td>Jacob</td>
-                <td>Thornton</td>
-                <td>@fat</td>
-              </tr>
-              <tr>
-                <th scope="row">3</th>
-                <td>Larry</td>
-                <td>the Bird</td>
-                <td>@twitter</td>
-              </tr>
-            </tbody>
-          </table>
+          <?php
+          $port = "83.212.80.139:58080/";
+          $response = sendrequest('http://' . $port . 'history', 'GET');
+
+          if ($response["code"] == 200) {
+            $balance = $response["response"];
+
+            $json = json_decode($response["response"]);
+
+            echo '<table class="table table-hover caption-top">
+      <caption>Table:</caption>
+      <thead class = "table-primary">
+      <tr>
+      <th scope="col">#</th>
+      <th scope="col">From/To</th>
+      <th scope="col">Node</th>
+      <th scope="col">Amount</th>
+      </tr>
+      </thead>
+      <tbody>';
+            $i = 0;
+            foreach ($json->transactionList as $key => $transaction) {
+
+              echo     '<tr>
+        <th scope="row">' . $i . '</th>
+        <td>' . $transaction->fromTo . '</td>
+        <td>' . $transaction->node . '</td>
+        <td>' . $transaction->amount . '</td>
+        </tr>';
+              $i += 1;
+            }
+          }
+          ?>
+
         </div>
       </div>
+      <?php
+      $port = "83.212.80.139:58080/";
+      if ($_SERVER["REQUEST_METHOD"] == 'POST') {
+        $flag = 0;
+        if (empty($_POST["receiver"])) {
+          $flag = 1;
+        } else {
+          $receiver = $_POST["receiver"];
+        }
+        if (empty($_POST["amount"])) {
+          $flag = 1;
+        } else {
+          $amount = $_POST["amount"];
+        }
+        if ($flag == 1) {
+      ?>
+          <br><br>
+          <div class="container  card d-flex justify-content-center" style="background-color: #222222;">
+            <div class="card-header d-flex justify-content-center">
+              Response
+            </div>
+            <div class="card-body d-flex justify-content-center bg-danger text-white">
+              All fields required!
+            </div>
+          </div>
+          <?php
+        } else {
+
+          $response = sendrequest('http://' . $port . 'transaction/id0/' . $receiver . '/' . $amount, 'POST');
+          if ($response["code"] == 200) {
+          ?>
+            <br><br>
+            <div class="container  card d-flex justify-content-center" style="background-color: #222222;">
+              <div class="card-header d-flex justify-content-center">
+                Response
+              </div>
+              <div class="card-body d-flex justify-content-center bg-success text-white">
+                Success!
+              </div>
+            </div>
+          <?php
+          } else {
+          ?>
+            <br><br>
+            <div class="container  card d-flex justify-content-center" style="background-color: #222222;">
+              <div class="card-header d-flex justify-content-center">
+                Response
+              </div>
+              <div class="card-body d-flex justify-content-center bg-success text-white">
+                Success!
+              </div>
+            </div>
+      <?php
+          }
+        }
+      }
+      ?>
     </div>
   </div>
 
