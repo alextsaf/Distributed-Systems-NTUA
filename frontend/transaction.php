@@ -73,7 +73,7 @@
 
             echo '<table class="table table-hover caption-top">
       <caption>Table:</caption>
-      <thead class = "table-primary">
+      <thead class = "table-primary text-white">
       <tr>
       <th scope="col">#</th>
       <th scope="col">From/To</th>
@@ -85,7 +85,7 @@
             $i = 0;
             foreach ($json->transactionList as $key => $transaction) {
 
-              echo     '<tr>
+              echo     '<tr class = "text-white">
         <th scope="row">' . $i . '</th>
         <td>' . $transaction->fromTo . '</td>
         <td>' . $transaction->node . '</td>
