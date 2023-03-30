@@ -58,7 +58,7 @@
         <div class="card-body d-flex justify-content-start text-white">
           <p><b style="font-size: 10vw;"><?php echo $balance ?></b>
             <b style="font-size: 5vw;">NBC</b>
-            <br> History
+            <br>
           </p>
         </div>
         <div class="overflow-auto" style="max-width: 100%; max-height: 200px; background-color: #222222">
@@ -72,8 +72,8 @@
             $json = json_decode($response["response"]);
 
             echo '<table class="table table-hover caption-top">
-      <caption>Table:</caption>
-      <thead class = "table-primary text-white">
+      <caption>History:</caption>
+      <thead class = "table-dark text-white">
       <tr>
       <th scope="col">#</th>
       <th scope="col">From/To</th>
@@ -93,10 +93,12 @@
         </tr>';
               $i += 1;
             }
+            echo "</table>";
           }
           ?>
 
         </div>
+
       </div>
       <?php
       $port = "83.212.80.139:58080/";
@@ -161,7 +163,6 @@
 
 
 </body>
-
 
 <?php include "func/footer.php"; ?>
 
